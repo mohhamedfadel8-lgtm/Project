@@ -1,0 +1,49 @@
+#include <Arduino.h>
+#include <WiFi.h>
+
+#include"ESPAsyncWebServer.h"
+char ssid[] = "test";     
+char pass[] = "test12345"; 
+AsyncWebServer server(80);
+void get_function(AsyncWebServerRequest *req){
+  req->send(200, "text/plain", "Ok route");
+}
+
+void setup() {
+
+ Serial.begin(115200);
+  WiFi.begin(ssid,pass);
+  Serial.print("Connecting to.. ");
+  Serial.print(ssid);
+
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("..");
+  }
+  Serial.println("Connected to the WiFi network");
+  Serial.println(WiFi.localIP());
+
+
+
+ server.on("/get", HTTP_GET, get_function);
+ //lamda function [] (parameters) 
+ //{
+
+ //}
+ server.on("/post", HTTP_POST,[] (AsyncWebServerRequest *req){
+  req->send(200, "text/plain", "POST route");});
+
+  server.on("/del" , HTTP_DELETE , [](AsyncWebServerRequest *req){
+    req->send(200, "text/plain" , "DELETE route");
+  });
+
+  server.on("/put" , HTTP_PUT , [](AsyncWebServerRequest *req){
+    req->send(200, "text/plain" , "PUT route");
+  });
+
+server.begin();
+}
+
+void loop() {
+  
+}
