@@ -1,0 +1,66 @@
+/* ESP32 WiFi Scanning example */
+// NTP=>Network Time Protocol
+
+#include "WiFi.h"
+#include <LiquidCrystal_I2C.h>
+#include<time.h>
+
+ void printLocalTime();
+LiquidCrystal_I2C LCD =LiquidCrystal_I2C(0x27,16,4);
+char ssid[] = "Wokwi-GUEST";
+char pass[] = "";
+
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -18000;    
+const int daylightOffset_sec = 3600;
+
+void setup() {
+Serial.begin(115200);
+LCD.init();
+LCD.backlight();
+WiFi.begin(ssid,pass);
+LCD.setCursor(0,0);
+LCD.println("Connecting to");
+LCD.setCursor(0,1);
+LCD.print(ssid);
+Serial.print("Connecting to");
+Serial.print(ssid);
+while(WiFi.status()!=WL_CONNECTED)
+{
+  delay(5000);
+  LCD.print("..");
+  Serial.print("...");
+}
+delay(5000);
+LCD.clear();
+LCD.setCursor(0,0);
+LCD.println("wifi connected");
+LCD.setCursor(0,1);
+LCD.print(WiFi.localIP());
+Serial.println("");
+Serial.print("WiFi Connected");
+Serial.print(WiFi.localIP());
+configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+printLocalTime();
+}
+
+void loop() {
+printLocalTime();
+}
+
+void printLocalTime()
+{
+struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  LCD.setCursor(0,2);
+  LCD.print(&timeinfo, "%H:%M:%S");
+  LCD.setCursor(0,3);
+  LCD.print(&timeinfo, "%d:%m:%Y");
+}
+
+
+ 
