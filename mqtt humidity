@@ -1,0 +1,52 @@
+#include "WiFi.h"
+#include "DHTesp.h"
+#include "ThingSpeak.h"
+
+#define DHT 15
+
+char * ssid = "Wokwi-GUEST";
+char * pass = "";
+int channel_number = 3250610;
+char * api_key = "BXVCAF3K7378817K";
+char * server_name = "api.thingspeak.com";
+
+DHTesp dht;
+WiFiClient client;
+
+void setup() {
+  Serial.begin(115200);
+
+  dht.setup(DHT, DHTesp::DHT22);
+  TempAndHumidity data = dht.getTempAndHumidity();
+
+  // Serial.println(data.temperature);
+  // Serial.println(data.humidity);
+
+  WiFi.begin(ssid, pass);
+  Serial.print("Wifi .");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print("...");
+  }
+
+  ThingSpeak.begin(client);
+}
+
+void loop() {
+  TempAndHumidity data = dht.getTempAndHumidity();
+
+  ThingSpeak.setField(1, data.temperature);
+  ThingSpeak.setField(2, data.humidity);
+
+  int x = ThingSpeak.writeFields(channel_number, api_key);
+
+  if (x == 200) {
+    Serial.println("Channel update successful.");
+  }
+  else {
+    Serial.println("Problem updating channel. HTTP error code " + String(x));
+  }
+
+  delay(15000);
+}
