@@ -1,0 +1,89 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+/* ---------- WiFi ---------- */
+char ssid[] = "Wokwi-GUEST";
+char password[] = "";
+
+/* ---------- HiveMQ Cloud ---------- */
+const char *mqtt_broker = "572e7ac7bdfa42d288226d7fdcee1ad1.s1.eu.hivemq.cloud";
+const int mqtt_port = 8883;
+
+const char *mqtt_username = "project_carts";
+const char *mqtt_password = "123456Mo";
+
+/* ---------- Topics ---------- */
+const char *topic_publish   = "emqx/esp32/p";
+const char *topic_subscribe = "emqx/esp32/s";
+
+/* ---------- Objects ---------- */
+WiFiClientSecure espClient;
+PubSubClient client(espClient);
+
+/* ---------- Hardware ---------- */
+#define LED 2
+
+/* ---------- Callback ---------- */
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message;
+
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  Serial.print("Topic: ");
+  Serial.println(topic);
+  Serial.print("Message: ");
+  Serial.println(message);
+
+  if (String(topic) == topic_subscribe) {
+    digitalWrite(LED, message == "ON" ? HIGH : LOW);
+  }
+}
+
+/* ---------- Setup ---------- */
+void setup() {
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+
+  Serial.begin(115200);
+
+  /* WiFi */
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  Serial.println(WiFi.localIP());
+
+  /* TLS (IMPORTANT) */
+  espClient.setInsecure();   // OK for testing (Wokwi)
+
+  /* MQTT */
+  client.setServer(mqtt_broker, mqtt_port);
+  client.setCallback(callback);
+
+  while (!client.connected()) {
+    String clientId = "ESP32-" + String(random(0xffff), HEX);
+
+    Serial.print("Connecting to MQTT...");
+    if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
+      Serial.println("CONNECTED ✅");
+    } else {
+      Serial.print("FAILED ❌, state = ");
+      Serial.println(client.state());
+      delay(2000);
+    }
+  }
+
+  client.subscribe(topic_subscribe);
+  client.publish(topic_publish, "Hello from ESP32");
+}
+
+/* ---------- Loop ---------- */
+void loop() {
+  client.loop();
+}
